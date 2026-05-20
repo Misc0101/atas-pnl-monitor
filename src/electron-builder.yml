@@ -1,0 +1,36 @@
+appId: com.atas.pnlmonitor
+productName: ATAS PnL Monitor
+
+directories:
+  output: dist
+
+files:
+  - main.js
+  - preload.js
+  - renderer/**/*
+  - node_modules/**/*
+  - "!node_modules/electron-builder/**/*"
+  - "!node_modules/.bin/**/*"
+  - "!dist/**/*"
+
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: ATAS PnL Monitor
+  installerLanguages:
+    - zh_CN
+    - en_US
+
+portable:
+  artifactName: "ATAS-PnL-Monitor-portable.exe"

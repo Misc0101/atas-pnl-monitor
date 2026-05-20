@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>ATAS PnL Monitor</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../node_modules/echarts/dist/echarts.min.js"></script>
+</head>
+<body>
+
+<!-- ── 标题栏 32px ── -->
+<div class="titlebar" id="titlebar">
+  <div class="tb-left">
+    <svg class="app-icon" viewBox="0 0 16 16" fill="none">
+      <polyline points="1,13 5,8 8,10 11,5 15,7"
+        stroke="#2dd4bf" stroke-width="1.5"
+        stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="15" cy="7" r="1.5" fill="#2dd4bf"/>
+    </svg>
+    <span class="app-title">ATAS PnL Monitor</span><span class="app-ver">v1.1.0</span>
+  </div>
+
+  <div class="tb-center">
+    <button class="tb-toggle" id="btn-curve-only">
+      <svg viewBox="0 0 14 14" fill="none">
+        <polyline points="1,11 4.5,6.5 7,8 10,3.5 13,5.5"
+          stroke="currentColor" stroke-width="1.3"
+          stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      仅看曲线
+    </button>
+    <button class="tb-toggle" id="btn-pin">
+      <svg viewBox="0 0 14 14" fill="none">
+        <line x1="7" y1="1.5" x2="7" y2="9"
+          stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        <path d="M3.5,5.5 L7,1.5 L10.5,5.5"
+          stroke="currentColor" stroke-width="1.3"
+          stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <line x1="4.5" y1="9" x2="9.5" y2="9"
+          stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="7" y1="9" x2="7" y2="13"
+          stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+      置顶
+    </button>
+  </div>
+
+  <div class="tb-right">
+    <button class="tb-ctrl" id="btn-min" title="最小化">
+      <svg viewBox="0 0 12 12">
+        <line x1="2" y1="6" x2="10" y2="6"
+          stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <button class="tb-ctrl tb-close" id="btn-close" title="关闭">
+      <svg viewBox="0 0 12 12">
+        <line x1="2.5" y1="2.5" x2="9.5" y2="9.5"
+          stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="9.5" y1="2.5" x2="2.5" y2="9.5"
+          stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- ── 主体 ── -->
+<div class="main-body" id="main-body">
+
+  <!-- 筛选栏 -->
+  <aside class="filter-panel" id="filter-panel">
+
+    <!-- 侧边栏头部（收起按钮） -->
+    <div class="sidebar-hd">
+      <button class="sidebar-collapse" id="btn-collapse" title="收起侧边栏">
+        <svg viewBox="0 0 8 14" fill="none">
+          <polyline points="6,1 1,7 6,13"
+            stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- 账户筛选 -->
+    <div class="fsec">
+      <div class="fsec-hd">
+        <div style="display:flex;align-items:center;gap:4px">
+          <span class="fsec-lbl">活跃账户</span>
+          <span class="help-wrap">
+            <span class="help-icon">?</span>
+            <span class="help-tip" style="width:128px">过去 24 小时内有成交记录的账户</span>
+          </span>
+        </div>
+        <div class="fsec-ops">
+          <button class="lnk-btn" id="btn-all-aids" title="全选所有活跃账户">全选</button>
+          <span class="dot-sep">·</span>
+          <button class="lnk-btn" id="btn-clr-aids">清空</button>
+        </div>
+      </div>
+      <div class="aid-list" id="aid-list">
+        <span class="ph">加载中…</span>
+      </div>
+      <div id="hist-row" style="display:none; margin-top:4px">
+        <button class="lnk-btn expd-btn" id="btn-pop-open">
+          <svg viewBox="0 0 10 10" fill="none" width="10" height="10">
+            <rect x="1" y="1" width="8" height="8" rx="1.5"
+              stroke="currentColor" stroke-width="1.3"/>
+            <line x1="3" y1="5" x2="7" y2="5"
+              stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            <line x1="5" y1="3" x2="5" y2="7"
+              stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          所有账户<span id="hist-count" style="margin-left:4px;color:var(--tx3)"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 品种筛选 -->
+    <div class="fsec">
+      <div class="fsec-hd">
+        <span class="fsec-lbl">品种</span>
+      </div>
+      <div class="sym-list" id="sym-list">
+        <label class="rd-row sel">
+          <input type="radio" name="sym" value="all" checked> 全部
+        </label>
+      </div>
+    </div>
+
+    <!-- 时间范围 -->
+    <div class="fsec">
+      <div class="fsec-hd">
+        <div style="display:flex;align-items:center;gap:4px">
+          <span class="fsec-lbl">时间范围</span>
+          <span class="help-wrap">
+            <span class="help-icon">?</span>
+            <span class="help-tip" style="width:140px">4h / 8h / 24h：将开始时间设为当前往前推对应小时，结束自动切为"至今"。<br><br>"至今"激活后，结束时间跟随当前时刻实时更新，有新成交时图表自动延伸；手动设置结束时间后自动退出。</span>
+          </span>
+        </div>
+      </div>
+      <div class="t-row">
+        <span class="t-lbl">开始</span>
+        <input type="datetime-local" id="dt-start" class="dt-in">
+      </div>
+      <!-- 快捷跨度 -->
+      <div class="span-row">
+        <button class="span-btn" data-h="4">4h</button>
+        <button class="span-btn" data-h="8">8h</button>
+        <button class="span-btn" data-h="24">24h</button>
+        <button class="span-btn span-now on" data-h="0">至今</button>
+      </div>
+      <div class="t-row">
+        <span class="t-lbl">结束</span>
+        <input type="datetime-local" id="dt-end" class="dt-in" disabled>
+      </div>
+    </div>
+
+    <!-- 时区 -->
+    <div class="fsec">
+      <div class="fsec-hd">
+        <div style="display:flex;align-items:center;gap:4px">
+          <span class="fsec-lbl">时区偏移</span>
+          <span class="help-wrap">
+            <span class="help-icon">?</span>
+            <span class="help-tip" style="width:140px">数据文件时间均为 UTC+0。修改此值后，图表 X 轴将还原为对应时区的本地时间，便于复盘当时行情。<br><br>示例：UTC+8，文件记录 UTC 12:00 → 图表显示 20:00。</span>
+          </span>
+        </div>
+      </div>
+      <div class="tz-row">
+        <span class="tz-pfx">UTC</span>
+        <select id="sel-tz" class="tz-sel">
+          <option value="-12">−12</option><option value="-11">−11</option>
+          <option value="-10">−10</option><option value="-9">−9</option>
+          <option value="-8">−8</option><option value="-7">−7</option>
+          <option value="-6">−6</option><option value="-5">−5</option>
+          <option value="-4">−4</option><option value="-3">−3</option>
+          <option value="-2">−2</option><option value="-1">−1</option>
+          <option value="0">+0</option><option value="1">+1</option>
+          <option value="2">+2</option><option value="3">+3</option>
+          <option value="4">+4</option><option value="5">+5</option>
+          <option value="6">+6</option><option value="7">+7</option>
+          <option value="8" selected>+8</option>
+          <option value="9">+9</option><option value="10">+10</option>
+          <option value="11">+11</option><option value="12">+12</option>
+          <option value="13">+13</option><option value="14">+14</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 数据文件 -->
+    <div class="fsec">
+      <div class="fsec-hd">
+        <div style="display:flex;align-items:center;gap:4px">
+          <span class="fsec-lbl">数据文件</span>
+          <span class="help-wrap">
+            <span class="help-icon">?</span>
+            <span class="help-tip" style="width:140px;word-break:break-all">默认读取 ATAS 软件的交易记录文件。<br><br>默认路径：<br>C:\Users\lenovo\AppData\Roaming\ATAS\Database\HistoryMyTrade.cdb<br><br>若读取失败，可点击"更改"手动选择正确的文件。</span>
+          </span>
+        </div>
+      </div>
+      <div class="df-path" id="df-path"></div>
+      <div class="df-err"  id="df-err"></div>
+      <div class="df-btns">
+        <button class="span-btn" id="btn-choose-file">更改</button>
+        <button class="span-btn" id="btn-reset-file" style="display:none">恢复默认</button>
+      </div>
+    </div>
+
+    <!-- 状态 -->
+    <div class="stat-row" id="stat-row">
+      <span id="stat-txt">就绪</span>
+      <span class="stat-dot" id="stat-dot"></span>
+    </div>
+
+  </aside>
+
+  <!-- 侧边栏 resize handle / 折叠时展开按钮 -->
+  <div class="panel-toggle" id="panel-toggle">
+    <svg id="toggle-icon" viewBox="0 0 8 14" fill="none" style="display:none">
+      <polyline points="1,1 6,7 1,13"
+        stroke="currentColor" stroke-width="1.5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+
+  <!-- 右侧列 -->
+  <div class="right-col" id="right-col">
+
+    <!-- 概览行 -->
+    <div class="sumbar" id="sumbar"></div>
+
+    <!-- 图表 -->
+    <div class="chart-wrap" id="chart-wrap">
+      <div id="chart-el"></div>
+      <div class="nodata" id="nodata">
+        <svg viewBox="0 0 56 40" fill="none">
+          <polyline points="4,36 14,22 22,28 34,14 46,19 52,16"
+            stroke="#333" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <p>当前筛选条件下暂无数据</p>
+      </div>
+    </div>
+
+    <!-- 拖动分隔条 -->
+    <div class="resize-handle" id="resize-handle"></div>
+
+    <!-- 品种统计 -->
+    <div class="stats-panel" id="stats-panel">
+      <div class="stats-hd">品种统计</div>
+      <div class="stats-scroll">
+        <table class="stats-tbl" id="stats-tbl">
+          <thead>
+            <tr>
+              <th>品种</th>
+              <th class="r">交易次数</th>
+              <th class="r">胜率</th>
+              <th class="r">盈亏比</th>
+              <th class="r">平均盈利</th>
+              <th class="r">平均亏损</th>
+              <th class="r">毛盈亏（未含手续费）</th>
+              <th class="r">净盈亏（含手续费）</th>
+            </tr>
+          </thead>
+          <tbody id="stats-body">
+            <tr><td colspan="8" class="empty-td">暂无数据</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- right-col -->
+</div><!-- main-body -->
+
+<!-- 历史账户弹窗 -->
+<div class="aid-overlay" id="aid-overlay"></div>
+<div class="aid-popup" id="aid-popup">
+  <div class="aid-popup-hd">
+    <span class="aid-popup-title">所有账户</span>
+    <div class="aid-popup-ops">
+      <button class="lnk-btn" id="pop-all">全选</button>
+      <span class="dot-sep">·</span>
+      <button class="lnk-btn" id="pop-clr">清空</button>
+    </div>
+    <button class="aid-popup-cfg" id="aid-popup-cfg" title="设置">
+      <svg viewBox="0 0 12 12" fill="none">
+        <circle cx="6" cy="6" r="1.8" stroke="currentColor" stroke-width="1.2"/>
+        <path d="M6 1v1.2M6 9.8V11M1 6h1.2M9.8 6H11M2.76 2.76l.85.85M8.39 8.39l.85.85M9.24 2.76l-.85.85M3.61 8.39l-.85.85"
+          stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <button class="aid-popup-close" id="aid-popup-close" title="关闭">
+      <svg viewBox="0 0 10 10" fill="none">
+        <line x1="2" y1="2" x2="8" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="8" y1="2" x2="2" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+  <div class="aid-cfg-row" id="aid-cfg-row">
+    <span class="aid-cfg-lbl" style="display:flex;align-items:center;gap:4px">
+      时段间隔阈值
+      <span class="help-wrap">
+        <span class="help-icon">?</span>
+        <span class="help-tip" style="width:260px">此设置的目的是让程序能按照用户的实际交易习惯，对账户历史记录自动切段，便于按每次做单周期分别统计与回顾。<br><br>交易者通常在固定时段下单，例如专做美盘的交易者，一般每晚开始做单，做到次日凌晨结束；两个交易日之间会有一段较长的空档。<br><br>举例：某交易者夏令时 5 月 13 日做单时间为 20:30 至次日 02:00，5 月 14 日为 20:00 至次日 01:00，两段之间的空档为 18 小时（凌晨 02:00 至当晚 20:00）。<br><br>修改阈值后，该账户的时段划分如下：<br>阈值 = 8 小时（18h &gt; 8h，正确切开）：<br>· 5/13 20:30 — 5/14 02:00<br>· 5/14 20:00 — 5/15 01:00<br><br>阈值 = 30 小时（18h &lt; 30h，合并为一段）：<br>· 5/13 20:30 — 5/15 01:00</span>
+      </span>
+    </span>
+    <input type="number" id="cfg-gap-h" class="aid-cfg-in" min="1" max="48" value="8">
+    <span class="aid-cfg-unit">小时</span>
+  </div>
+  <div class="aid-search-wrap">
+    <input type="text" id="aid-search" class="aid-search" placeholder="搜索账户名…">
+  </div>
+  <div class="aid-popup-list" id="aid-popup-list"></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

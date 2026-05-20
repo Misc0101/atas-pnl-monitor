@@ -1,0 +1,22 @@
+# Dependencies
+src/node_modules/
+src/dist/
+
+# Personal trading data (never commit)
+*.cdb
+*.xlsx
+
+# Development-only files
+启动.bat
+requirements.md
+ScreenShop/
+Screenshots/
+示例图片.png
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
