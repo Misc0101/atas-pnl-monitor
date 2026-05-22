@@ -25,7 +25,7 @@ ATAS 8.0 dropped the built-in P&L curve that traders relied on in v7.x. This too
 - **Time range** — quick presets (4 h / 8 h / 24 h / until now) or custom start/end
 - **Curve-only mode** — hides all panels, chart fills the window
 - **Always-on-top** — float above your trading platform independently of curve-only mode
-- **Dual layout memory** — window size and position saved separately for each mode
+- **Dual layout memory** — window size and position saved separately for each mode; auto-recenters if the saved position falls outside all connected displays (e.g. after disconnecting a portable monitor)
 - **Timezone offset** — shift the X-axis to any UTC offset for correct local-time display
 - **Dark frameless UI** — minimal, distraction-free
 
@@ -38,7 +38,7 @@ Head to [**Releases**](../../releases) and grab the latest build:
 | File | Notes |
 |------|-------|
 | `ATAS-PnL-Monitor-portable.exe` | Portable — no install, just run |
-| `ATAS PnL Monitor Setup 1.1.0.exe` | NSIS installer, creates desktop shortcut |
+| `ATAS PnL Monitor Setup 1.1.1.exe` | NSIS installer, creates desktop shortcut |
 
 No runtime required. The packaged app is self-contained.
 
@@ -88,7 +88,7 @@ Packaged output in `src/dist/`:
 | File | Description |
 |------|-------------|
 | `ATAS-PnL-Monitor-portable.exe` | Single-file portable build |
-| `ATAS PnL Monitor Setup 1.1.0.exe` | NSIS installer |
+| `ATAS PnL Monitor Setup 1.1.1.exe` | NSIS installer |
 
 > `src/build/icon.ico` is pre-generated and committed. Re-run `npm run icon` only if you modify `src/build/icon.svg`.
 

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, screen } = require('electron');
 const path = require('path');
 const fs   = require('fs');
 
@@ -51,10 +51,24 @@ function createWindow() {
     }
   };
 
-  // 有保存的位置则恢复，否则 Electron 默认居中
+  // 有保存的位置则恢复，但须先确认坐标在当前任意一块显示器范围内
+  // 否则（如之前放在便携屏上，现在该屏未连接）保持默认居中，避免窗口不可见
   if (fl && fl.x !== null && fl.x !== undefined) {
-    opts.x = fl.x;
-    opts.y = fl.y;
+    const displays = screen.getAllDisplays();
+    const w = (fl.w || opts.width);
+    const h = (fl.h || opts.height);
+    // 检查窗口标题栏区域中心点是否在某块显示器内
+    const cx = fl.x + w / 2;
+    const cy = fl.y + 20;
+    const isOnScreen = displays.some(d => {
+      const b = d.bounds;
+      return cx >= b.x && cx < b.x + b.width &&
+             cy >= b.y && cy < b.y + b.height;
+    });
+    if (isOnScreen) {
+      opts.x = fl.x;
+      opts.y = fl.y;
+    }
   }
 
   win = new BrowserWindow(opts);
