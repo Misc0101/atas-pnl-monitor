@@ -96,6 +96,14 @@ function fmtFull(ts) {
 
 function pad(n) { return String(n).padStart(2, '0'); }
 
+function hasSavedPosition(layout) {
+  return Number.isFinite(layout?.x) && Number.isFinite(layout?.y);
+}
+
+function defaultCurveLayout() {
+  return { x: null, y: null, w: 420, h: 320 };
+}
+
 function fmtUsd(v) {
   return '$' + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -365,6 +373,22 @@ function renderChart(trades) {
   chartInst.setOption(opt, { notMerge: true });
 }
 
+// ── Sharpe Ratio ─────────────────────────────────
+function calcSharpe(trades) {
+  const dayMap = Object.create(null);
+  for (const t of trades) {
+    const key = new Date(t.ct).toISOString().slice(0, 10);
+    dayMap[key] = (dayMap[key] || 0) + t.net;
+  }
+  const daily = Object.values(dayMap);
+  const n = daily.length;
+  if (n < 2) return null;
+  const mean = daily.reduce((s, v) => s + v, 0) / n;
+  const std  = Math.sqrt(daily.reduce((s, v) => s + (v - mean) ** 2, 0) / (n - 1));
+  if (std === 0) return null;
+  return (mean / std) * Math.sqrt(252);
+}
+
 // ── Summary bar ──────────────────────────────────
 function renderSumbar(trades) {
   const el = document.getElementById('sumbar');
@@ -380,12 +404,18 @@ function renderSumbar(trades) {
   const gc = gross >= 0 ? 'p' : 'n';
   const nc = net   >= 0 ? 'p' : 'n';
 
+  const sharpe    = calcSharpe(trades);
+  const sharpeHtml = sharpe !== null
+    ? `<div class="si"><span class="si-lbl">夏普</span><span class="si-val ${sharpe >= 0 ? 'p' : 'n'}">${sharpe.toFixed(2)}</span></div>`
+    : '';
+
   el.innerHTML =
     `<div class="si"><span class="si-lbl">毛盈亏</span><span class="si-val ${gc}">${signFmt(gross)}</span></div>` +
     `<div class="si"><span class="si-lbl">净盈亏</span><span class="si-val ${nc}">${signFmt(net)}</span></div>` +
     `<div class="si"><span class="si-lbl">手续费</span><span class="si-val n">${fmtUsd(comm)}</span></div>` +
     `<div class="si"><span class="si-lbl">笔数</span><span class="si-val d">${cnt}</span></div>` +
-    `<div class="si"><span class="si-lbl">胜率</span><span class="si-val d">${fmtPct(wr)}</span></div>`;
+    `<div class="si"><span class="si-lbl">胜率</span><span class="si-val d">${fmtPct(wr)}</span></div>` +
+    sharpeHtml;
 }
 
 // ── Stats Table ──────────────────────────────────
@@ -872,11 +902,11 @@ async function enterCurveOnly() {
   document.getElementById('btn-curve-only').title = '完整界面';
 
   // 瞬跳到曲线模式快照（若无记录则用默认尺寸，位置由系统决定）
-  const cl = S.layouts.curve;
-  if (cl.x !== null && cl.x !== undefined) {
+  const cl = S.layouts.curve || defaultCurveLayout();
+  if (hasSavedPosition(cl)) {
     window.api.setBounds(cl);
   } else {
-    window.api.setBounds({ x: cl.x, y: cl.y, w: cl.w, h: cl.h });
+    window.api.setBounds({ w: cl.w || 420, h: cl.h || 320 });
   }
 
   setTimeout(() => { if (chartInst) { chartInst.resize(); refresh(); } }, 120);
@@ -932,6 +962,12 @@ function bindEvents() {
   document.getElementById('btn-curve-only').addEventListener('click', () => {
     if (S.curveOnly) exitCurveOnly();
     else             enterCurveOnly();
+  });
+
+  document.getElementById('btn-reset-curve-layout').addEventListener('click', async () => {
+    S.layouts.curve = defaultCurveLayout();
+    await persistCfg();
+    setStatus('已重置仅看曲线位置', 'live');
   });
 
   // Pin toggle

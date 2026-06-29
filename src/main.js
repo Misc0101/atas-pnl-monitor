@@ -33,6 +33,40 @@ function saveCfg(cfg) {
   catch (e) { console.error('saveCfg:', e.message); }
 }
 
+function isFiniteNum(v) {
+  return Number.isFinite(v);
+}
+
+function titlebarPointOnScreen(x, y, w) {
+  const cx = x + w / 2;
+  const cy = y + 20;
+  return screen.getAllDisplays().some(d => {
+    const b = d.bounds;
+    return cx >= b.x && cx < b.x + b.width &&
+           cy >= b.y && cy < b.y + b.height;
+  });
+}
+
+function centeredBounds(w, h) {
+  const area = screen.getPrimaryDisplay().workArea;
+  return {
+    x: Math.round(area.x + Math.max(0, (area.width - w) / 2)),
+    y: Math.round(area.y + Math.max(0, (area.height - h) / 2))
+  };
+}
+
+function safeWindowBounds(bounds, fallbackW, fallbackH, minW, minH) {
+  const w = Math.max(minW, Math.round(isFiniteNum(bounds?.w) ? bounds.w : fallbackW));
+  const h = Math.max(minH, Math.round(isFiniteNum(bounds?.h) ? bounds.h : fallbackH));
+  const hasPos = isFiniteNum(bounds?.x) && isFiniteNum(bounds?.y);
+
+  if (hasPos && titlebarPointOnScreen(bounds.x, bounds.y, w)) {
+    return { x: Math.round(bounds.x), y: Math.round(bounds.y), w, h };
+  }
+
+  return { ...centeredBounds(w, h), w, h };
+}
+
 function createWindow() {
   const cfg = loadCfg();
   const fl  = cfg.fullLayout;  // 上次完整界面的位置和尺寸
@@ -40,9 +74,12 @@ function createWindow() {
   // 恢复自定义数据文件路径
   if (cfg.dataFile) dataFile = cfg.dataFile;
 
+  const safeFull = safeWindowBounds(fl, 1100, 800, 380, 280);
   const opts = {
-    width:     (fl && fl.w) ? fl.w : 1100,
-    height:    (fl && fl.h) ? fl.h : 800,
+    width:     safeFull.w,
+    height:    safeFull.h,
+    x:         safeFull.x,
+    y:         safeFull.y,
     minWidth:  380, minHeight: 280,
     frame: false, backgroundColor: '#1a1a1a',
     webPreferences: {
@@ -50,26 +87,6 @@ function createWindow() {
       contextIsolation: true, nodeIntegration: false, sandbox: false
     }
   };
-
-  // 有保存的位置则恢复，但须先确认坐标在当前任意一块显示器范围内
-  // 否则（如之前放在便携屏上，现在该屏未连接）保持默认居中，避免窗口不可见
-  if (fl && fl.x !== null && fl.x !== undefined) {
-    const displays = screen.getAllDisplays();
-    const w = (fl.w || opts.width);
-    const h = (fl.h || opts.height);
-    // 检查窗口标题栏区域中心点是否在某块显示器内
-    const cx = fl.x + w / 2;
-    const cy = fl.y + 20;
-    const isOnScreen = displays.some(d => {
-      const b = d.bounds;
-      return cx >= b.x && cx < b.x + b.width &&
-             cy >= b.y && cy < b.y + b.height;
-    });
-    if (isOnScreen) {
-      opts.x = fl.x;
-      opts.y = fl.y;
-    }
-  }
 
   win = new BrowserWindow(opts);
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
@@ -166,13 +183,10 @@ ipcMain.handle('win-get-bounds', () => {
 });
 
 // 设置窗口位置 + 尺寸（瞬跳）
-ipcMain.on('win-set-bounds', (_, { x, y, w, h }) => {
+ipcMain.on('win-set-bounds', (_, bounds) => {
   if (!win || win.isDestroyed()) return;
-  win.setBounds({
-    x: Math.round(x), y: Math.round(y),
-    width: Math.max(200, Math.round(w)),
-    height: Math.max(150, Math.round(h))
-  });
+  const b = safeWindowBounds(bounds, 420, 320, 200, 150);
+  win.setBounds({ x: b.x, y: b.y, width: b.w, height: b.h });
 });
 
 ipcMain.on('window-minimize', () => { if (win && !win.isDestroyed()) win.minimize(); });

@@ -58,6 +58,7 @@ html, body {
   -webkit-app-region: no-drag;
 }
 .tb-toggle svg { width: 12px; height: 12px; }
+.tb-compact { padding: 0 7px; font-size: 12px; }
 .tb-toggle:hover { color: var(--tx); background: var(--bg3); }
 .tb-toggle.on { color: var(--teal); border-color: var(--teal); background: rgba(45,212,191,.1); }
 #btn-pin.on   { color: var(--amb);  border-color: var(--amb);  background: rgba(251,191,36,.08); }
