@@ -20,7 +20,7 @@ ATAS 8.0 dropped the built-in P&L curve that traders relied on in v7.x. This too
 - **Two curves** — gross P&L (excl. fees) and net P&L (incl. fees), side by side
 - **Current net P&L overlay** — always visible in curve-only mode, even when trades cluster into a vertical line
 - **Max drawdown** — auto-calculated, shaded region + dollar annotation
-- **Sharpe ratio** — annualized Sharpe (no risk-free rate) displayed in the summary bar; auto-hidden when fewer than 2 trading days are in the current filter
+- **Sharpe ratio** — annualized Sharpe displayed in the summary bar alongside other metrics; formula: `(mean daily net P&L / sample std) × √252`, risk-free rate assumed zero; auto-hidden when fewer than 2 trading days are in the current filter
 - **Trade ID filtering** — active trading IDs shown in sidebar; full history popup with per-ID session breakdown
 - **Symbol filter** — view all instruments combined or drill into one
 - **Time range** — quick presets (4 h / 8 h / 24 h / until now) or custom start/end
